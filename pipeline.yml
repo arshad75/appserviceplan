@@ -1,1 +1,33 @@
-An error occurred while generating or modifying code: Invalid operation: The `response.text` quick accessor requires the response to contain a valid `Part`, but none were returned. Please check the `candidate.safety_ratings` to determine if the response was blocked.
+```
+pipeline {
+  agent any
+
+  stages {
+    stage('Clone') {
+      steps {
+        git 'https://github.com/GoogleCloudPlatform/python-docs-samples'
+      }
+    }
+
+    stage('Build') {
+      steps {
+        sh 'python setup.py sdist'
+      }
+    }
+
+    stage('Test') {
+      steps {
+        sh 'python -m pytest -v test/test_main.py'
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        genai() {
+          copy('sdist/sample-project-*.tar.gz', 'gs://my-bucket/artifacts/')
+        }
+      }
+    }
+  }
+}
+```
