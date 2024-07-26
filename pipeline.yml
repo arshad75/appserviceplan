@@ -1,0 +1,49 @@
+**Jenkins Pipeline**
+
+```groovy
+pipeline {
+    agent any
+
+    // Authentication (Optional)
+    environment {
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+        AWS_DEFAULT_REGION = 'us-east-1'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', credentialsId: 'my-github-credentials'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'pip install -r requirements.txt'
+                sh 'pytest'
+            }
+        }
+
+        stage('Dockerize') {
+            steps {
+                sh 'docker build -t my-docker-image .'
+            }
+        }
+
+        stage('Push to ECR') {
+            steps {
+                script {
+                    def ECR_IMAGE = 'my-docker-image'
+                    def ECR_REGISTRY = 'my-ecr-registry'
+                    def IMAGE_NAME = "${ECR_REGISTRY}/${ECR_IMAGE}"
+
+                    sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                    sh "docker tag my-docker-image:latest ${IMAGE_NAME}:latest"
+                    sh "docker push ${IMAGE_NAME}:latest"
+                }
+            }
+        }
+    }
+}
+```
