@@ -1,36 +1,47 @@
-```groovy
 pipeline {
-    agent { label 'maven' }
+    agent any
+
     stages {
-        stage('Auth') {
+        stage('Test') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                    sh "docker login -u ${USERNAME} -p ${PASSWORD}"
-                }
+                sh 'mvn test'
             }
         }
-        stage('Checkout') {
-            steps {
-                git branch: 'main', credentialsId: 'github-credentials', url: 'https://github.com/my-org/my-repo.git'
-            }
-        }
+
         stage('Build') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn package'
             }
         }
-        stage('Dockerize') {
+
+        stage('Package') {
             steps {
-                sh 'docker build -t my-image:latest .'
+                sh 'mvn jar:jar'
             }
         }
-        stage('Publish') {
+
+        stage('Create Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                    sh "docker push my-image:latest"
-                }
+                docker.build image: 'my-image', dockerfile: 'Dockerfile'
+            }
+        }
+
+        stage('Scan Docker Image') {
+            steps {
+                docker.scan image: 'my-image'
+            }
+        }
+
+        stage('Publish Docker Image') {
+            steps {
+                docker.push image: 'my-image'
+            }
+        }
+
+        stage('Scan for Secrets') {
+            steps {
+                sh 'secret-scanner scan'
             }
         }
     }
 }
-```
