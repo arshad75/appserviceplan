@@ -1,0 +1,30 @@
+```
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build') {
+            steps {
+                sh 'python setup.py install'
+            }
+        }
+        stage('Dockerize') {
+            steps {
+                sh 'docker build -t my-image .'
+            }
+        }
+        stage('Publish') {
+            steps {
+                docker.withRegistry('https://index.docker.io/v1/', 'my-username', 'my-password') {
+                    sh 'docker push my-image'
+                }
+            }
+        }
+    }
+}
+```
