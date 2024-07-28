@@ -1,54 +1,63 @@
 ```yaml
 name: Node.js CI/CD Pipeline
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-jobs:
+stages:
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: npm
-      - run: npm install
-      - run: npm build
+    jobs:
+      build:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v2
+          - uses: actions/setup-node@v1
+            with:
+              node-version: 16
+          - run: npm ci
+          - run: npm run build
+          - persist:
+              paths:
+                - dist/
+          - store_artifacts:
+              path: dist/
+              name: build_artifacts
 
   test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: npm
-      - run: npm install
-      - run: npm test
-
-  scan:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: npm
-      - run: npm install
-      - run: npm install -g snyk
-      - run: snyk test
+    jobs:
+      test:
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v2
+          - uses: actions/setup-node@v1
+            with:
+              node-version: 16
+          - restore:
+              path: dist/
+          - run: npm run test
 
   deploy:
-    needs: scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: npm
-      - run: npm install
-      - run: npm deploy
+    jobs:
+      deploy:
+        needs: test
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v2
+          - restore:
+              path: dist/
+          - run: aws s3 cp dist s3://my-bucket/dist
+
+  clean:
+    jobs:
+      clean:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v2
+          - restore:
+              path: dist/
+          - run: rm -rf dist
 ```
