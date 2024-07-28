@@ -1,0 +1,33 @@
+```yaml
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  # Set the region where the application will be deployed
+  AWS_DEFAULT_REGION: "us-east-1"
+
+build:
+  stage: build
+  image: node:16.14.2
+  script:
+    - npm install
+    - npm run build
+
+test:
+  stage: test
+  image: node:16.14.2
+  script:
+    - npm install
+    - npm run test
+
+deploy:
+  stage: deploy
+  image: amazon/aws-cli
+  variables:
+    # Set the bucket name where the application will be deployed
+    S3_BUCKET_NAME: "my-application-bucket"
+  script:
+    - aws s3 sync dist/ s3://${S3_BUCKET_NAME}
+```
