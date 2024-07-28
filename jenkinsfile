@@ -1,17 +1,97 @@
 ```yaml
-- build:
-    stage: build
-    script: npm ci && npm run build
-    artifacts:
-      paths:
-        - public
-- test:
-    stage: test
-    script: npm test
-- secrets-scan:
-    stage: secrets-scan
-    script: npm install -g secrets-scan && secrets-scan
-- deploy:
-    stage: deploy
-    script: aws s3 sync public s3://my-app/
+# GitHub Actions CI/CD pipeline configuration for Node.js application
+
+name: Node.js CI/CD Pipeline
+
+on:
+  # Triggers the workflow on push or pull request events to the main branch
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Define jobs to be executed
+jobs:
+
+  # Build job
+  build:
+    # Run on Ubuntu 20.04 operating system
+    runs-on: ubuntu-20.04
+    # Checkout the code from the repository
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+  # Test job
+  test:
+    needs: build
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm run test
+
+  # Secret scanning job
+  secret-scan:
+    needs: build
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install TruffleHog
+        run: go install github.com/dxa4481/truffleHog/cmd/truffleHog@latest
+
+      - name: Scan for secrets
+        run: truffleHog --regex --entropy=1 --entropy-threshold=80 source/**/*.js
+
+  # Deploy job
+  deploy:
+    # Deploy to AWS using the AWS CodeDeploy action
+    needs: [build, test, secret-scan]
+    runs-on: ubuntu-20.04
+    # Deploy settings
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: us-west-2
+      APPLICATION_NAME: my-nodejs-app
+      # Your deployment group name in CodeDeploy
+      DEPLOYMENT_GROUP_NAME: my-deployment-group
+    steps:
+      - name: Choose deployment type
+        # Select the type of deployment to perform
+        # Possible values: "blue-green" or "in-place"
+        run: echo "DEPLOYMENT_TYPE=in-place" >> $GITHUB_ENV
+
+      - name: Install CodeDeploy CLI
+        # Install the AWS CodeDeploy CLI
+        run: sudo apt-get install awscli
+
+      - name: Prepare application for deployment
+        # Prepare the application for deployment
+        run: npm run build
+
+      - name: Deploy to AWS
+        # Deploy the application to AWS
+        run: aws deploy create-deployment \
+          --application-name $APPLICATION_NAME \
+          --deployment-config-name CodeDeployDefault.AllAtOnce \
+          --deployment-group-name $DEPLOYMENT_GROUP_NAME \
+          --s3-location s3://my-bucket/my-key \
+          --file-exists-behavior OVERWRITE \
+          --deployment-type $DEPLOYMENT_TYPE
 ```
