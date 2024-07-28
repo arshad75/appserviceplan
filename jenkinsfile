@@ -1,26 +1,54 @@
 ```yaml
-stages:
-  - build
-  - test
-  - deploy
+name: Node.js CI/CD Pipeline
+
+on: [push]
 
 jobs:
   build:
-    stage: build
-    script:
-      - npm install
-      - npm run build
-    artifacts:
-      paths:
-        - dist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+      - run: npm install
+      - run: npm build
 
   test:
-    stage: test
-    script:
-      - npm test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+      - run: npm install
+      - run: npm test
+
+  scan:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+      - run: npm install
+      - run: npm install -g snyk
+      - run: snyk test
 
   deploy:
-    stage: deploy
-    script:
-      - aws s3 sync dist s3://my-bucket
+    needs: scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+      - run: npm install
+      - run: npm deploy
 ```
