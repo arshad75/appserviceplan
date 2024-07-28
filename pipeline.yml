@@ -1,36 +1,33 @@
-```groovy
+```
 pipeline {
-    agent { label 'maven' }
-    stages {
-        stage('Auth') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                    sh "docker login -u ${USERNAME} -p ${PASSWORD}"
-                }
-            }
-        }
-        stage('Checkout') {
-            steps {
-                git branch: 'main', credentialsId: 'github-credentials', url: 'https://github.com/my-org/my-repo.git'
-            }
-        }
-        stage('Build') {
-            steps {
-                sh 'mvn clean package'
-            }
-        }
-        stage('Dockerize') {
-            steps {
-                sh 'docker build -t my-image:latest .'
-            }
-        }
-        stage('Publish') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                    sh "docker push my-image:latest"
-                }
-            }
-        }
+  agent any
+
+  stages {
+    stage('Clone') {
+      steps {
+        git 'https://github.com/GoogleCloudPlatform/python-docs-samples'
+      }
     }
+
+    stage('Build') {
+      steps {
+        sh 'python setup.py sdist'
+      }
+    }
+
+    stage('Test') {
+      steps {
+        sh 'python -m pytest -v test/test_main.py'
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        genai() {
+          copy('sdist/sample-project-*.tar.gz', 'gs://my-bucket/artifacts/')
+        }
+      }
+    }
+  }
 }
 ```
