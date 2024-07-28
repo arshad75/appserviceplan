@@ -2,33 +2,25 @@
 stages:
   - build
   - test
-  - scan_secrets
   - deploy
 
-build:
-  stage: build
-  image: node:16-slim
-  script:
-    - npm install
-    - npm run build
+jobs:
+  build:
+    stage: build
+    script:
+      - npm install
+      - npm run build
+    artifacts:
+      paths:
+        - dist
 
-test:
-  stage: test
-  image: node:16-slim
-  script:
-    - npm run test
+  test:
+    stage: test
+    script:
+      - npm test
 
-scan_secrets:
-  stage: scan_secrets
-  image: ghcr.io/google/oss-fuzz-corpora/github-actions
-  script:
-    - pip install awscli
-    - aws secretsmanager scan --secret ARN_OF_SECRET
-
-deploy:
-  stage: deploy
-  image: node:16-slim
-  script:
-    - aws ec2 run-instances --image-id AMI_ID --instance-type INSTANCE_TYPE --key-name KEY_NAME
-    - aws s3 sync ./dist s3://BUCKET_NAME
+  deploy:
+    stage: deploy
+    script:
+      - aws s3 sync dist s3://my-bucket
 ```
