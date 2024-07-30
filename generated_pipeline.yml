@@ -1,43 +1,43 @@
-name: Node.js AWS CI/CD
+name: CI/CD Pipeline for Node.js Application on AWS
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
         with:
-          node-version: '16'
+          node-version: "12.x"
       - run: npm ci
-      - run: npm test
+      - run: npm run build
 
   test:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
         with:
-          node-version: '16'
-      - run: npm i -g codecov
-      - run: npm run coverage
+          node-version: "12.x"
+      - run: npm ci
+      - run: npm test
 
-  deploy:
+  docker-build:
     needs: test
-    environment:
-      name: production
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-      - run: npm run deploy
+      - uses: actions/checkout@v2
+      - run: docker build -t my-node-app .
+
+  deploy:
+    needs: docker-build
+    environment: production
+    runs-on: aws-ec2
+    steps:
+      - uses: actions/checkout@v2
+      - run: docker run -d -p 8080:8080 my-node-app
