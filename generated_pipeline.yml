@@ -1,33 +1,47 @@
 ```yaml
-stages:
-  - build
-  - test
-  - deploy
+name: Node.js CI/CD Pipeline
 
-variables:
-  # Set the region where the application will be deployed
-  AWS_DEFAULT_REGION: "us-east-1"
+on:
+  push:
+    branches:
+      - main
 
-build:
-  stage: build
-  image: node:16.14.2
-  script:
-    - npm install
-    - npm run build
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install dependencies
+        run: npm ci
+      - name: Build the app
+        run: npm run build
+      - name: Store build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: build
 
-test:
-  stage: test
-  image: node:16.14.2
-  script:
-    - npm install
-    - npm run test
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: build
+      - name: Setup Node Environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Run Tests
+        run: npm run test
 
-deploy:
-  stage: deploy
-  image: amazon/aws-cli
-  variables:
-    # Set the bucket name where the application will be deployed
-    S3_BUCKET_NAME: "my-application-bucket"
-  script:
-    - aws s3 sync dist/ s3://${S3_BUCKET_NAME}
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    # ... (AWS deployment configuration here)
 ```
