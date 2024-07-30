@@ -1,10 +1,11 @@
 ```yaml
-name: Node.js CI/CD Pipeline
+name: nodejs-aws-ci-cd
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
@@ -13,35 +14,32 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
-      - name: Install dependencies
-        run: npm ci
-      - name: Build the app
-        run: npm run build
-      - name: Store build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-artifacts
-          path: build
+          node-version: '16'
+      - run: npm ci
+      - run: npm run build --if-present
 
   test:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/setup-node@v3
         with:
-          name: build-artifacts
-          path: build
-      - name: Setup Node Environment
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-      - name: Run Tests
-        run: npm run test
+          node-version: '16'
+      - run: npm ci
+      - run: npm test
 
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    # ... (AWS deployment configuration here)
+    environment: production
+    steps:
+      - uses: actions/checkout@v3
+      - uses: aws-actions/aws-eks-deploy@v1
+        with:
+          cluster-name: my-cluster
+          namespace: my-namespace
+          service: my-service
+          image: my-image
+          load-balancer: my-load-balancer
 ```
