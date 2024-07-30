@@ -1,45 +1,43 @@
-```yaml
-name: nodejs-aws-ci-cd
+name: nodejs-aws-build-test-deploy
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
         with:
-          node-version: '16'
-      - run: npm ci
-      - run: npm run build --if-present
+          node-version: '14.x'
+      - run: npm install
+      - run: npm run build
 
   test:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
         with:
-          node-version: '16'
-      - run: npm ci
-      - run: npm test
+          node-version: '14.x'
+      - run: npm install
+      - run: npm run test
 
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    environment: production
     steps:
-      - uses: actions/checkout@v3
-      - uses: aws-actions/aws-eks-deploy@v1
+      - uses: actions/checkout@v2
+      - uses: akash-gupta00/aws-ecr-deploy@v1
         with:
-          cluster-name: my-cluster
-          namespace: my-namespace
-          service: my-service
-          image: my-image
-          load-balancer: my-load-balancer
-```
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: 'us-east-1'
+          image: 'my-image-name'
+          tag: latest
+          force_deploy: 'True'
+          extra_args: []
