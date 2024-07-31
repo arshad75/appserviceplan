@@ -1,23 +1,36 @@
+name: Nodejs-AWS-CICD
+
+on:
+  push:
+    branches: [ master ]
+
 stages:
-  - build
-  - test
-  - deploy
+  - Build
+  - Test
+  - Deploy
 
-build:
-  stage: build
-  image: node:16-slim
-  script:
-    - npm install
-    - npm run build
+jobs:
+  build:
+    stage: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: yarn install
+      - run: yarn build
 
-test:
-  stage: test
-  image: node:16-slim
-  script:
-    - npm test
+  test:
+    stage: Test
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v2
+      - run: yarn test
 
-deploy:
-  stage: deploy
-  image: node:16-slim
-  script:
-    - aws deploy pushr --application-name my-node-app --s3-bucket my-s3-bucket --source 
+  deploy:
+    stage: Deploy
+    runs-on: ubuntu-latest
+    needs: test
+    environment: production
+    steps:
+      - uses: actions/checkout@v2
+      - run: echo "Deploying to AWS"
