@@ -1,36 +1,19 @@
-name: Nodejs-AWS-CICD
-
-on:
-  push:
-    branches: [ master ]
-
-stages:
-  - Build
-  - Test
-  - Deploy
-
-jobs:
+```yaml
+# Define the pipeline configuration
+pipeline:
   build:
-    stage: Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - run: yarn install
-      - run: yarn build
-
+    image: node:lts-slim
+    stages:
+      - npm-install
+      - lint
+      - test
+      - build
   test:
-    stage: Test
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v2
-      - run: yarn test
-
+    image: node:lts-slim
+    stages:
+      - e2e-test
   deploy:
-    stage: Deploy
-    runs-on: ubuntu-latest
-    needs: test
-    environment: production
-    steps:
-      - uses: actions/checkout@v2
-      - run: echo "Deploying to AWS"
+    image: node:lts-slim
+    stages:
+      - deploy-to-aws
+```
