@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for Node.js Application on AWS
+name: CI/CD Pipeline
 
 on:
   push:
@@ -10,34 +10,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v2
         with:
-          node-version: "12.x"
-      - run: npm ci
-      - run: npm run build
+          node-version: '16'
+      - name: Install dependencies
+        run: npm install
+      - name: Build the app
+        run: npm run build
 
   test:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v2
         with:
-          node-version: "12.x"
-      - run: npm ci
-      - run: npm test
+          node-version: '16'
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm run test
 
   docker-build:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: docker build -t my-node-app .
+      - name: Build Docker image
+        run: docker build -t my-nodejs-app .
 
   deploy:
     needs: docker-build
-    environment: production
-    runs-on: aws-ec2
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: docker run -d -p 8080:8080 my-node-app
+      - name: Deploy to AWS
+        # TODO: Add actual deployment steps here
