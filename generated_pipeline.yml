@@ -1,31 +1,23 @@
-pipeline {
-    agent any
+stages:
+  - build
+  - test
+  - deploy
 
-    stages {
-        stage('Build') {
-            steps {
-                echo 'Building the application...'
-                sh 'npm install'
-                sh 'npm run build'
-            }
-        }
-        stage('Test') {
-            steps {
-                echo 'Testing the application...'
-                sh 'npm test'
-            }
-        }
-        stage('Deploy') {
-            steps {
-                echo 'Deploying the application to AWS...'
-                sh 'aws s3 sync build/ s3://my-bucket/'
-            }
-        }
-        stage('Cleanup') {
-            steps {
-                echo 'Cleaning up temporary files...'
-                sh 'rm -rf build/'
-            }
-        }
-    }
-}
+build:
+  stage: build
+  image: node:16-slim
+  script:
+    - npm install
+    - npm run build
+
+test:
+  stage: test
+  image: node:16-slim
+  script:
+    - npm test
+
+deploy:
+  stage: deploy
+  image: node:16-slim
+  script:
+    - aws deploy pushr --application-name my-node-app --s3-bucket my-s3-bucket --source 
