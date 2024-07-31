@@ -1,46 +1,28 @@
-name: CI/CD Pipeline
+stages:
+  - build
+  - test
+  - docker-build
+  - deploy
 
-on:
-  push:
-    branches:
-      - main
+build:
+  stage: build
+  script:
+    - npm install
+    - npm run build
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-      - name: Install dependencies
-        run: npm install
-      - name: Build the app
-        run: npm run build
+test:
+  stage: test
+  script:
+    - npm test
 
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-      - name: Install dependencies
-        run: npm install
-      - name: Run tests
-        run: npm run test
+docker-build:
+  stage: docker-buildweqfdwef
+  image: docker:latest
+  script:
+    - docker build -t my-app:latest .
 
-  docker-build:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build Docker image
-        run: docker build -t my-nodejs-app .
-
-  deploy:
-    needs: docker-build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to AWS
-        # TODO: Add actual deployment steps here
+deploy:
+  stage: deploy
+  image: aws/codedeploy:latest
+  script:
+    - aws deploy create-deployment --application-name my-app --deployment-group-name my-test-group --deployment-config-name my-test-config --s3-location bucket=my-bucket,key=my-app.zip,bundle-type=zip --file-exists-behavior OVERWRITE
