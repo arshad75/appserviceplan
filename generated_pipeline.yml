@@ -1,28 +1,31 @@
-stages:
-  - build
-  - test
-  - docker-build
-  - deploy
+pipeline {
+    agent any
 
-build:
-  stage: build
-  script:
-    - npm install
-    - npm run build
-
-test:
-  stage: test
-  script:
-    - npm test
-
-docker-build:
-  stage: docker-buildweqfdwef
-  image: docker:latest
-  script:
-    - docker build -t my-app:latest .
-
-deploy:
-  stage: deploy
-  image: aws/codedeploy:latest
-  script:
-    - aws deploy create-deployment --application-name my-app --deployment-group-name my-test-group --deployment-config-name my-test-config --s3-location bucket=my-bucket,key=my-app.zip,bundle-type=zip --file-exists-behavior OVERWRITE
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building the application...'
+                sh 'npm install'
+                sh 'npm run build'
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'Testing the application...'
+                sh 'npm test'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'Deploying the application to AWS...'
+                sh 'aws s3 sync build/ s3://my-bucket/'
+            }
+        }
+        stage('Cleanup') {
+            steps {
+                echo 'Cleaning up temporary files...'
+                sh 'rm -rf build/'
+            }
+        }
+    }
+}
