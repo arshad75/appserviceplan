@@ -1,0 +1,20 @@
+```yaml
+pipeline:
+  buildAndTest:
+    image: node:14-buster
+    before_script:
+      - npm ci
+    script:
+      - npm run build
+      - npm run test
+    artifacts:
+      paths:
+        - build
+
+  deploy:
+    image: python:3
+    before_script:
+      - pip install boto3
+    script:
+      - python deploy.py -r us-east-1 -b my-bucket -d my-app 
+```
