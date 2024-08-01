@@ -1,19 +1,41 @@
 ```yaml
-# Define the pipeline configuration
-pipeline:
+name: Node.js CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
   build:
-    image: node:lts-slim
-    stages:
-      - npm-install
-      - lint
-      - test
-      - build
+    runs-on: ubuntu-latest
+    container: node:16
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - run: yarn install
+      - run: yarn build
+
   test:
-    image: node:lts-slim
-    stages:
-      - e2e-test
+    needs: build
+    runs-on: ubuntu-latest
+    container: node:16
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - run: yarn test
+
   deploy:
-    image: node:lts-slim
-    stages:
-      - deploy-to-aws
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - run: aws ecs deploy my-service.json
 ```
