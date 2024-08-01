@@ -1,45 +1,39 @@
-name: CI/CD Pipeline for Node.js on AWS
+name: Node.js CI/CD pipeline
 
-on: [push]
+on:
+  push:
+    branches: [ master, main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
         with:
-          node-version: '16.x'
-      - name: Install dependencies
-        run: npm install
-      - name: Build the application
-        run: npm run build
+          node-version: '16'
+      - run: npm ci
+      - run: npm run build
 
   test:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
         with:
-          node-version: '16.x'
-      - name: Install dependencies
-        run: npm install
-      - name: Run tests
-        run: npm run test
+          node-version: '16'
+      - run: npm ci
+      - run: npm run test
 
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    environment: production
     steps:
-      - uses: actions/checkout@v3
-      - name: Deploy to AWS
-        uses: aws-actions/aws-cloudformation-deploy@v1
+      - uses: actions/checkout@v2
+      - uses: actions/setup-aws-credentials@v1
         with:
-          name: my-nodejs-app  # CloudFormation stack name
-          template-file: ./cloudformation.yaml
-          parameter-overrides: {}  # Environment-specific parameters
-          region: us-east-1  # AWS region
-          access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - run: aws s3 sync build s3://my-bucket-name
