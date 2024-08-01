@@ -1,41 +1,23 @@
 ```yaml
-name: Node.js CI/CD Pipeline
-
-on:
-  push:
-    branches:
-      - main
+stages:
+  - build
+  - test
+  - deploy
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container: node:16
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-      - run: yarn install
-      - run: yarn build
+    stage: build
+    script:
+      - npm install
+      - npm run build
 
   test:
-    needs: build
-    runs-on: ubuntu-latest
-    container: node:16
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-      - run: yarn test
+    stage: test
+    script:
+      - npm test
 
   deploy:
-    needs: test
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - run: aws ecs deploy my-service.json
+    stage: deploy
+    script:
+      - aws s3 sync build s3://my-bucket-name
 ```
