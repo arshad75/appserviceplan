@@ -1,0 +1,23 @@
+```yaml
+stages:
+  - build
+  - test
+  - deploy
+
+jobs:
+  build:
+    stage: build
+    script:
+      - npm install
+      - npm run build
+
+  test:
+    stage: test
+    script:
+      - npm test
+
+  deploy:
+    stage: deploy
+    script:
+      - aws s3 sync build s3://my-bucket/my-app
+```
