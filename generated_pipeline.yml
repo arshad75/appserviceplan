@@ -1,0 +1,26 @@
+```yaml
+image: node:16
+
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
+  script:
+    - npm install
+    - npm run build
+
+test:
+  stage: test
+  script:
+    - npm test
+
+deploy:
+  stage: deploy
+  only:
+    - master
+  script:
+    - aws s3 sync dist s3://my-bucket-name
+```
