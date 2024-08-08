@@ -1,0 +1,51 @@
+name: Node.js CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: us-east-1  # Replace with your desired AWS region
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'  # Specify your desired Node.js version
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+  deploy:
+    needs: build-and-test  # Only run deployment if tests pass
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build and deploy to AWS Elastic Beanstalk
+        uses: aws-actions/aws-elastic-beanstalk-deploy@v1  # Or use a different deployment action based on your chosen AWS service
+        with:
+          application-name: your-app-name   # Replace with your Elastic Beanstalk application name
+          environment-name: your-environment-name  # Replace with your Elastic Beanstalk environment name
+          version-label: ${{ github.run_number }}
+          bucket-name: your-s3-bucket-name  # Replace with your S3 bucket name for deployment artifacts
+          bucket-path: your-app/
+          region: ${{ env.AWS_REGION }}
